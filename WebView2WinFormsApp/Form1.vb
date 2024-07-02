@@ -78,7 +78,7 @@ Public Class Form1
 
     Private Function Send_Comment(comment_text As String) As Boolean
         Try
-            Dim comment_input = edgeDriver.FindElement(By.CssSelector("[aria-label='留言……']"))
+            Dim comment_input = edgeDriver.FindElement(By.CssSelector("div.x78zum5.xdt5ytf.x1iyjqo2.x1n2onr6 > div > div.xzsf02u.x1a2a7pz.x1n2onr6.x14wi4xw.notranslate"))
             Dim comment_lines() As String = comment_text.Split(vbLf)
             Dim last_line_idx As Integer = comment_lines.Length - 1
             For i As Integer = 0 To last_line_idx
