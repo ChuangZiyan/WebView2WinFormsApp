@@ -25,6 +25,7 @@ Public Class Form1
         url_TextBox.Text = "https://www.facebook.com/"
         Await InitializeWebView2()
         'WebView21.Source = New Uri("https://google.com.tw/")
+        'WebView21.Source = New Uri("https://www.facebook.com/groups/8217730601630579/posts/9747843095285981/")
         Dim driverManager = New DriverManager()
         driverManager.SetUpDriver(New EdgeConfig(), VersionResolveStrategy.MatchingBrowser) 'automatically download a chromedriver.exe matching the version of the browser
         'driverManager.SetUpDriver(New EdgeConfig())
@@ -54,8 +55,10 @@ Public Class Form1
     End Sub
 
     Private Async Sub Send_Comment_Button_Click(sender As Object, e As EventArgs) Handles Send_Comment_Button.Click
-        Clipboard.SetText(Comment_RichTextBox.Text)
-        Await Send_Comment_Task(Comment_RichTextBox.Text)
+        Debug.WriteLine("Send comment bnt click")
+        Dim mytext As String = Comment_RichTextBox.Text
+        Clipboard.SetText(mytext)
+        Await Send_Comment_Task(mytext)
     End Sub
 
 
@@ -87,10 +90,17 @@ Public Class Form1
             Threading.Thread.Sleep(1000)
             Dim actions As New Actions(edgeDriver)
             'actions.SendKeys(Keys.LeftControl + "V").Perform()
-            actions.KeyDown(Keys.LeftControl).SendKeys("V").KeyUp(Keys.LeftControl).Perform()
+            'actions.KeyDown(Keys.LeftControl).SendKeys("V").Perform()
+            actions.KeyDown(Keys.LeftControl)
+            Threading.Thread.Sleep(100)
+            actions.SendKeys("v")
+            Threading.Thread.Sleep(100)
+            actions.KeyUp(Keys.LeftControl)
+            Threading.Thread.Sleep(100)
+            actions.Perform()
             Threading.Thread.Sleep(1000)
             Dim send_comment_btn = edgeDriver.FindElement(By.CssSelector("#focused-state-composer-submit > span > div"))
-            send_comment_btn.Click()
+            'send_comment_btn.Click()
             Return True
         Catch ex As Exception
             Debug.WriteLine(ex)
