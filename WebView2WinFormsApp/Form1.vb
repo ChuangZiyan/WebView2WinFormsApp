@@ -1,7 +1,9 @@
 ﻿
+Imports System.Reflection.Metadata
 Imports Microsoft.Web.WebView2.Core
 Imports OpenQA.Selenium
 Imports OpenQA.Selenium.Edge
+Imports OpenQA.Selenium.Interactions
 Imports WebDriverManager
 Imports WebDriverManager.DriverConfigs.Impl
 Imports WebDriverManager.Helpers
@@ -22,7 +24,7 @@ Public Class Form1
         Debug.WriteLine("Form1 Load")
         url_TextBox.Text = "https://www.facebook.com/"
         Await InitializeWebView2()
-        'WebView21.Source = New Uri("edge://flags")
+        'WebView21.Source = New Uri("https://google.com.tw/")
         Dim driverManager = New DriverManager()
         driverManager.SetUpDriver(New EdgeConfig(), VersionResolveStrategy.MatchingBrowser) 'automatically download a chromedriver.exe matching the version of the browser
         'driverManager.SetUpDriver(New EdgeConfig())
@@ -52,6 +54,7 @@ Public Class Form1
     End Sub
 
     Private Async Sub Send_Comment_Button_Click(sender As Object, e As EventArgs) Handles Send_Comment_Button.Click
+        Clipboard.SetText(Comment_RichTextBox.Text)
         Await Send_Comment_Task(Comment_RichTextBox.Text)
     End Sub
 
@@ -78,23 +81,16 @@ Public Class Form1
 
     Private Function Send_Comment(comment_text As String) As Boolean
         Try
-            Dim comment_input = edgeDriver.FindElement(By.CssSelector("div.x78zum5.xdt5ytf.x1iyjqo2.x1n2onr6 > div > div.xzsf02u.x1a2a7pz.x1n2onr6.x14wi4xw.notranslate"))
-            Dim comment_lines() As String = comment_text.Split(vbLf)
-            Dim last_line_idx As Integer = comment_lines.Length - 1
-            For i As Integer = 0 To last_line_idx
-                Dim line As String = comment_lines(i)
-                line = line.Replace(vbCr, "").Replace(vbLf, "")
-                comment_input.SendKeys(line)
-                If i <> last_line_idx Then
-                    Threading.Thread.Sleep(200)
-                    comment_input.SendKeys(Keys.LeftShift + Keys.Return)
-                Else
-                    Threading.Thread.Sleep(1000)
-                End If
-            Next
 
-            Dim comment_btn = edgeDriver.FindElement(By.CssSelector("#focused-state-composer-submit > span > div"))
-            comment_btn.Click()
+            Dim comment_eles = edgeDriver.FindElements(By.CssSelector("div[aria-label='留言']"))
+            comment_eles(comment_eles.Count - 1).Click()
+            Threading.Thread.Sleep(1000)
+            Dim actions As New Actions(edgeDriver)
+            'actions.SendKeys(Keys.LeftControl + "V").Perform()
+            actions.KeyDown(Keys.LeftControl).SendKeys("V").KeyUp(Keys.LeftControl).Perform()
+            Threading.Thread.Sleep(1000)
+            Dim send_comment_btn = edgeDriver.FindElement(By.CssSelector("#focused-state-composer-submit > span > div"))
+            send_comment_btn.Click()
             Return True
         Catch ex As Exception
             Debug.WriteLine(ex)
@@ -103,8 +99,19 @@ Public Class Form1
 
     End Function
 
-    Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
+    Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
         edgeDriver.Quit()
     End Sub
 
+
+    Private Sub restart_webview2_edge()
+        WebView21.Dispose()
+
+        Me.WebView21 = New Microsoft.Web.WebView2.WinForms.WebView2()
+        Me.Controls.Add(WebView21)
+    End Sub
+
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        restart_webview2_edge()
+    End Sub
 End Class
