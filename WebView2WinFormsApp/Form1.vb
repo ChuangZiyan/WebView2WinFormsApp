@@ -116,7 +116,7 @@ Public Class Form1
             actions.Perform()
             Threading.Thread.Sleep(1000)
             Dim send_comment_btn = edgeDriver.FindElement(By.CssSelector("#focused-state-composer-submit > span > div"))
-            'send_comment_btn.Click()
+            send_comment_btn.Click()
             Return True
         Catch ex As Exception
             Debug.WriteLine(ex)
