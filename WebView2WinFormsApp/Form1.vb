@@ -11,7 +11,6 @@ Imports WebDriverManager.Helpers
 Public Class Form1
 
     Public edgeDriver As IWebDriver
-
     Private debugPort As Integer = 9333 ' 這是我們將要使用的調試埠
     Private environment As CoreWebView2Environment
 
@@ -19,6 +18,7 @@ Public Class Form1
         environment = Await CoreWebView2Environment.CreateAsync(Nothing, Nothing, New CoreWebView2EnvironmentOptions("--remote-debugging-port=" & debugPort))
         Await WebView21.EnsureCoreWebView2Async(environment)
     End Function
+
 
     Private Async Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Debug.WriteLine("Form1 Load")
@@ -54,6 +54,17 @@ Public Class Form1
         Await Navigate_GoToUrl_Task(url_TextBox.Text)
     End Sub
 
+    Private Function isAlertPresent()
+        Try
+            Dim alert As IAlert = edgeDriver.SwitchTo().Alert()
+            alert.Accept()
+            Return True
+        Catch ex As Exception
+            Return False
+        End Try
+    End Function
+
+
     Private Async Sub Send_Comment_Button_Click(sender As Object, e As EventArgs) Handles Send_Comment_Button.Click
         Debug.WriteLine("Send comment bnt click")
         Dim mytext As String = Comment_RichTextBox.Text
@@ -70,6 +81,10 @@ Public Class Form1
     Public Function Navigate_GoToUrl(url As String) As Boolean
         Try
             edgeDriver.Navigate.GoToUrl(url)
+            Threading.Thread.Sleep(300)
+            If isAlertPresent() Then
+                Debug.WriteLine("Alert Present")
+            End If
             Return True
         Catch ex As Exception
             Debug.WriteLine(ex)
@@ -77,6 +92,7 @@ Public Class Form1
         End Try
 
     End Function
+
 
     Public Function Send_Comment_Task(comment_text) As Task(Of Boolean)
         Return Task.Run(Function() Send_Comment(comment_text))
@@ -113,15 +129,4 @@ Public Class Form1
         edgeDriver.Quit()
     End Sub
 
-
-    Private Sub restart_webview2_edge()
-        WebView21.Dispose()
-
-        Me.WebView21 = New Microsoft.Web.WebView2.WinForms.WebView2()
-        Me.Controls.Add(WebView21)
-    End Sub
-
-    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-        restart_webview2_edge()
-    End Sub
 End Class
