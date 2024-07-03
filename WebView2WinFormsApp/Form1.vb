@@ -101,22 +101,25 @@ Public Class Form1
     Private Function Send_Comment(comment_text As String) As Boolean
         Try
 
-            Dim comment_eles = edgeDriver.FindElements(By.CssSelector("div[aria-label='留言']"))
-            comment_eles(comment_eles.Count - 1).Click()
-            Threading.Thread.Sleep(1000)
-            Dim actions As New Actions(edgeDriver)
-            'actions.SendKeys(Keys.LeftControl + "V").Perform()
-            'actions.KeyDown(Keys.LeftControl).SendKeys("V").Perform()
-            actions.KeyDown(Keys.LeftControl)
-            Threading.Thread.Sleep(100)
-            actions.SendKeys("v")
-            Threading.Thread.Sleep(100)
-            actions.KeyUp(Keys.LeftControl)
-            Threading.Thread.Sleep(100)
-            actions.Perform()
-            Threading.Thread.Sleep(1000)
+            Dim comment_eles = edgeDriver.FindElements(By.CssSelector("div.x78zum5.xdt5ytf.x1iyjqo2.x1n2onr6 > div > div.xzsf02u.x1a2a7pz.x1n2onr6.x14wi4xw.notranslate"))
+
+            Dim comment_lines() As String = comment_text.Split(vbLf)
+            Dim last_line_idx As Integer = comment_lines.Length - 1
+            For i As Integer = 0 To last_line_idx
+                Dim line As String = comment_lines(i)
+                line = line.Replace(vbCr, "").Replace(vbLf, "")
+                comment_eles(comment_eles.Count - 1).SendKeys(line)
+                If i <> last_line_idx Then
+                    Threading.Thread.Sleep(200)
+                    comment_eles(comment_eles.Count - 1).SendKeys(Keys.LeftShift + Keys.Return)
+                Else
+                    Threading.Thread.Sleep(1000)
+                End If
+            Next
+
             Dim send_comment_btn = edgeDriver.FindElement(By.CssSelector("#focused-state-composer-submit > span > div"))
             send_comment_btn.Click()
+
             Return True
         Catch ex As Exception
             Debug.WriteLine(ex)
