@@ -11,8 +11,8 @@ Imports WebDriverManager.Helpers
 Public Class Form1
 
     Public edgeDriver As IWebDriver
-    Private debugPort As Integer = 9333 ' 這是我們將要使用的調試埠
     Private environment As CoreWebView2Environment
+    Private ReadOnly debugPort As Integer = 9333
 
     Private Async Function InitializeWebView2() As Task
         environment = Await CoreWebView2Environment.CreateAsync(Nothing, Nothing, New CoreWebView2EnvironmentOptions("--remote-debugging-port=" & debugPort))
@@ -22,8 +22,9 @@ Public Class Form1
 
     Private Async Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Debug.WriteLine("Form1 Load")
-        url_TextBox.Text = "https://www.facebook.com/"
         Await InitializeWebView2()
+        url_TextBox.Text = "https://www.facebook.com/"
+
         'WebView21.Source = New Uri("https://google.com.tw/")
         'WebView21.Source = New Uri("https://www.facebook.com/groups/8217730601630579/posts/9747843095285981/")
         Dim driverManager = New DriverManager()
@@ -51,51 +52,53 @@ Public Class Form1
     End Sub
 
     Private Async Sub Navigate_to_url_Button_Click(sender As Object, e As EventArgs) Handles Navigate_to_url_Button.Click
-        Await Navigate_GoToUrl_Task(url_TextBox.Text)
+        Dim myURL As String = url_TextBox.Text
+        Await Navigate_GoToUrl_Task(myURL)
     End Sub
 
-    Private Function isAlertPresent()
+
+    Private Async Function IsAlertPresentAsync() As Task(Of Boolean)
         Try
-            Dim alert As IAlert = edgeDriver.SwitchTo().Alert()
-            alert.Accept()
+            Dim alert As IAlert = Await Task.Run(
+                    Function()
+                        Try
+                            Return edgeDriver.SwitchTo().Alert()
+                        Catch ex As Exception
+                            Return False
+                        End Try
+                    End Function
+                )
+            Await Task.Run(Sub() alert.Accept())
+
             Return True
         Catch ex As Exception
             Return False
         End Try
     End Function
 
-
     Private Async Sub Send_Comment_Button_Click(sender As Object, e As EventArgs) Handles Send_Comment_Button.Click
-        Debug.WriteLine("Send comment bnt click")
+        'Debug.WriteLine("Send comment bnt click")
         Dim mytext As String = Comment_RichTextBox.Text
-        Clipboard.SetText(mytext)
-        Await Send_Comment_Task(mytext)
+        'Clipboard.SetText(mytext)
+        Await Task.Run(Function() Send_Comment(mytext))
     End Sub
-
 
 
     Public Function Navigate_GoToUrl_Task(url) As Task(Of Boolean)
         Return Task.Run(Function() Navigate_GoToUrl(url))
     End Function
 
-    Public Function Navigate_GoToUrl(url As String) As Boolean
+    Public Async Function Navigate_GoToUrl(url As String) As Task(Of Boolean)
         Try
             edgeDriver.Navigate.GoToUrl(url)
             Threading.Thread.Sleep(300)
-            If isAlertPresent() Then
-                Debug.WriteLine("Alert Present")
-            End If
+            Await IsAlertPresentAsync()
             Return True
         Catch ex As Exception
             Debug.WriteLine(ex)
             Return False
         End Try
 
-    End Function
-
-
-    Public Function Send_Comment_Task(comment_text) As Task(Of Boolean)
-        Return Task.Run(Function() Send_Comment(comment_text))
     End Function
 
     Private Function Send_Comment(comment_text As String) As Boolean
@@ -113,7 +116,7 @@ Public Class Form1
                     Threading.Thread.Sleep(200)
                     comment_eles(comment_eles.Count - 1).SendKeys(Keys.LeftShift + Keys.Return)
                 Else
-                    Threading.Thread.Sleep(1000)
+                    Threading.Thread.Sleep(500)
                 End If
             Next
 
