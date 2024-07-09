@@ -1,9 +1,11 @@
 ﻿
 Imports System.Reflection.Metadata
+Imports System.Text.RegularExpressions
 Imports Microsoft.Web.WebView2.Core
 Imports OpenQA.Selenium
 Imports OpenQA.Selenium.Edge
 Imports OpenQA.Selenium.Interactions
+Imports OpenQA.Selenium.Support.UI
 Imports WebDriverManager
 Imports WebDriverManager.DriverConfigs.Impl
 Imports WebDriverManager.Helpers
@@ -26,7 +28,7 @@ Public Class Form1
         url_TextBox.Text = "https://www.facebook.com/"
 
         'WebView21.Source = New Uri("https://google.com.tw/")
-        'WebView21.Source = New Uri("https://www.facebook.com/groups/8217730601630579/posts/9747843095285981/")
+        WebView21.Source = New Uri("https://www.facebook.com/groups/8217730601630579/posts/9747843095285981/")
         Dim driverManager = New DriverManager()
         driverManager.SetUpDriver(New EdgeConfig(), VersionResolveStrategy.MatchingBrowser) 'automatically download a chromedriver.exe matching the version of the browser
         'driverManager.SetUpDriver(New EdgeConfig())
@@ -104,24 +106,34 @@ Public Class Form1
     Private Function Send_Comment(comment_text As String) As Boolean
         Try
 
-            Dim comment_eles = edgeDriver.FindElements(By.CssSelector("div.x78zum5.xdt5ytf.x1iyjqo2.x1n2onr6 > div > div.xzsf02u.x1a2a7pz.x1n2onr6.x14wi4xw.notranslate"))
+            'Dim comment_eles = edgeDriver.FindElements(By.CssSelector("div.x78zum5.xdt5ytf.x1iyjqo2.x1n2onr6 > div > div.xzsf02u.x1a2a7pz.x1n2onr6.x14wi4xw.notranslate"))
 
             Dim comment_lines() As String = comment_text.Split(vbLf)
             Dim last_line_idx As Integer = comment_lines.Length - 1
             For i As Integer = 0 To last_line_idx
                 Dim line As String = comment_lines(i)
                 line = line.Replace(vbCr, "").Replace(vbLf, "")
-                comment_eles(comment_eles.Count - 1).SendKeys(line)
-                If i <> last_line_idx Then
-                    Threading.Thread.Sleep(200)
-                    comment_eles(comment_eles.Count - 1).SendKeys(Keys.LeftShift + Keys.Return)
-                Else
-                    Threading.Thread.Sleep(500)
-                End If
+
+
+                ' handle emoji
+                ExtractEmojis(line)
+
+                '''
+                'comment_eles(comment_eles.Count - 1).SendKeys(line)
+                'If i <> last_line_idx Then
+                ' Threading.Thread.Sleep(200)
+                'comment_eles(comment_eles.Count - 1).SendKeys(Keys.LeftShift + Keys.Return)
+                'Else
+                'Threading.Thread.Sleep(500)
+                'End If
+                '''
+
+
             Next
 
-            Dim send_comment_btn = edgeDriver.FindElement(By.CssSelector("#focused-state-composer-submit > span > div"))
-            send_comment_btn.Click()
+
+            'Dim send_comment_btn = edgeDriver.FindElement(By.CssSelector("#focused-state-composer-submit > span > div"))
+            'send_comment_btn.Click()
 
             Return True
         Catch ex As Exception
@@ -130,9 +142,74 @@ Public Class Form1
         End Try
 
     End Function
+    Function ExtractEmojis(input As String) As List(Of String)
+        ' 定義更全面的表情符號 Unicode 範圍
+        Dim emojiPattern As String = "[\u1F600-\u1F64F" &
+                                     "\u1F300-\u1F5FF" &
+                                     "\u1F680-\u1F6FF" &
+                                     "\u1F700-\u1F77F" &
+                                     "\u1F780-\u1F7FF" &
+                                     "\u1F800-\u1F8FF" &
+                                     "\u1F900-\u1F9FF" &
+                                     "\u1FA00-\u1FA6F" &
+                                     "\u1FA70-\u1FAFF" &
+                                     "\u2600-\u26FF" &
+                                     "\u2700-\u27BF" &
+                                     "\u23E9-\u23F3" &
+                                     "\u23F8-\u23FA" &
+                                     "\u2194-\u21AA" &
+                                     "]"
+
+        ' 使用正則表達式匹配表情符號
+        Dim regex As Regex = New Regex(emojiPattern)
+        Dim matches As MatchCollection = regex.Matches(input)
+
+        ' 將匹配到的表情符號存入列表
+        Dim emojiList As New List(Of String)()
+        For Each match As Match In matches
+            emojiList.Add(match.Value)
+            Debug.WriteLine("emo : " & match.Value)
+        Next
+
+        Return emojiList
+    End Function
+
+
+    Private Function Click_Select_Emoji(emoji)
+        Try
+            Dim wait As WebDriverWait = New WebDriverWait(edgeDriver, TimeSpan.FromSeconds(3))
+            wait.Until(Function(d) d.FindElement(By.CssSelector("#focused-state-actions-list > ul > li:nth-child(2) > span > div"))).Click()
+            Dim imgElements = wait.Until(Function(d) d.FindElements(By.XPath("//img[@alt='" & emoji & "']/../../..")))
+            'Debug.WriteLine("//img[@alt='" & emoji & "']/../../..")
+            imgElements(imgElements.Count - 1).Click()
+            Return True
+        Catch ex As Exception
+            Debug.WriteLine(ex)
+            Return False
+        End Try
+
+
+    End Function
+
+    Private Function Click_Emoji()
+        Try
+            Dim wait As WebDriverWait = New WebDriverWait(edgeDriver, TimeSpan.FromSeconds(3))
+            Dim imgElements = wait.Until(Function(d) d.FindElements(By.XPath("//img[@alt='😀']/../../..")))
+            imgElements(imgElements.Count - 1).Click()
+        Catch ex As Exception
+
+        End Try
+    End Function
 
     Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
         edgeDriver.Quit()
     End Sub
 
+    Private Async Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        Await Task.Run(Function() Click_Select_Emoji("😆"))
+    End Sub
+
+    Private Async Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
+        Await Task.Run(Function() Click_Emoji())
+    End Sub
 End Class
